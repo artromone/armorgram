@@ -55,6 +55,7 @@ import com.armorgram.receiver.SmsDeliveredReceiver
 import com.armorgram.receiver.SmsSentReceiver
 import com.armorgram.util.ImageUtils
 import com.armorgram.util.PhoneNumberUtils
+import com.armorgram.bridge.BridgeRepository
 import com.armorgram.util.Preferences
 import com.armorgram.util.tryOrNull
 import io.realm.Case
@@ -80,7 +81,8 @@ class MessageRepositoryImpl @Inject constructor(
     private val messageIds: KeyManager,
     private val phoneNumberUtils: PhoneNumberUtils,
     private val prefs: Preferences,
-    private val syncRepository: SyncRepository
+    private val syncRepository: SyncRepository,
+    private val bridgeRepository: BridgeRepository
 ) : MessageRepository {
 
     override fun getMessages(threadId: Long, query: String): RealmResults<Message> {
@@ -301,6 +303,12 @@ class MessageRepositoryImpl @Inject constructor(
         attachments: List<Attachment>,
         delay: Int
     ) {
+        // Bridge mode: virtual threadIds are negative. Encode and ship through the
+        // bridge repository which handles Realm persistence + SMS dispatch to gateway.
+        if (threadId < 0L && bridgeRepository.sendVirtual(subId, threadId, body)) {
+            return
+        }
+
         val signedBody = when {
             prefs.signature.get().isEmpty() -> body
             body.isNotEmpty() -> body + '\n' + prefs.signature.get()

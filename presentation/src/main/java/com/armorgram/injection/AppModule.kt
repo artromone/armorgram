@@ -77,6 +77,8 @@ import com.armorgram.repository.BlockingRepositoryImpl
 import com.armorgram.repository.ContactRepository
 import com.armorgram.repository.ContactRepositoryImpl
 import com.armorgram.repository.ConversationRepository
+import com.armorgram.bridge.BridgeRepository
+import com.armorgram.bridge.BridgeRepositoryImpl
 import com.armorgram.repository.ConversationRepositoryImpl
 import com.armorgram.repository.MessageRepository
 import com.armorgram.repository.MessageRepositoryImpl
@@ -216,5 +218,8 @@ class AppModule(private var application: Application) {
 
     @Provides
     fun provideSyncRepository(repository: SyncRepositoryImpl): SyncRepository = repository
+
+    @Provides
+    fun provideBridgeRepository(repository: BridgeRepositoryImpl): BridgeRepository = repository
 
 }

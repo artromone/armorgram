@@ -20,6 +20,7 @@ package com.armorgram.interactor
 
 import android.telephony.SmsMessage
 import com.armorgram.blocking.BlockingClient
+import com.armorgram.bridge.BridgeRepository
 import com.armorgram.extensions.mapNotNull
 import com.armorgram.manager.NotificationManager
 import com.armorgram.manager.ShortcutManager
@@ -37,7 +38,8 @@ class ReceiveSms @Inject constructor(
     private val messageRepo: MessageRepository,
     private val notificationManager: NotificationManager,
     private val updateBadge: UpdateBadge,
-    private val shortcutManager: ShortcutManager
+    private val shortcutManager: ShortcutManager,
+    private val bridgeRepo: BridgeRepository
 ) : Interactor<ReceiveSms.Params>() {
 
     class Params(val subId: Int, val messages: Array<SmsMessage>)
@@ -62,6 +64,14 @@ class ReceiveSms @Inject constructor(
                     val body: String = messages
                             .mapNotNull { message -> message.displayMessageBody }
                             .reduce { body, new -> body + new }
+
+                    // Bridge mode: if the sender is the configured gateway and the body
+                    // parses as a wire frame, route to virtual conversations and skip the
+                    // normal SMS-CP insert. A failed decode falls through to the usual flow
+                    // so a genuine human SMS from the same number is still readable.
+                    if (bridgeRepo.isGateway(address) && bridgeRepo.routeIncoming(it.subId, body, time)) {
+                        return@mapNotNull null
+                    }
 
                     // Add the message to the db
                     val message = messageRepo.insertReceivedSms(it.subId, address, body, time)

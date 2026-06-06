@@ -119,6 +119,14 @@ class Preferences @Inject constructor(
     val mmsSize = rxPrefs.getInteger("mmsSize", 300)
     val logging = rxPrefs.getBoolean("logging", false)
 
+    // Bridge mode: when set, all incoming SMS from `bridgeGatewayPhone` are parsed as
+    // wire frames and rendered as virtual Telegram-style conversations. Outgoing
+    // messages from those virtual chats are encoded back into wire frames and sent
+    // to the gateway number.
+    val bridgeEnabled = rxPrefs.getBoolean("bridgeEnabled", false)
+    val bridgeGatewayPhone = rxPrefs.getString("bridgeGatewayPhone", "")
+    val bridgeOutSeq = rxPrefs.getLong("bridgeOutSeq", 0L)
+
     init {
         // Migrate from old night mode preference to new one, now that we support android Q night mode
         val nightModeSummary = rxPrefs.getInteger("nightModeSummary")
