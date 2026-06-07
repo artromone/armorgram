@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class BridgeRepositoryImpl @Inject constructor(
     private val prefs: Preferences,
-    private val messageIds: KeyManager,
+    private val messageIds: KeyManager
 ) : BridgeRepository {
 
     override fun isGateway(address: String): Boolean {
@@ -35,11 +35,11 @@ class BridgeRepositoryImpl @Inject constructor(
     }
 
     override fun virtualThreadId(alias: String): Long {
-        val key = prefs.bridgeGatewayPhone.get().normalizePhone() + "|" + alias.lowercase()
+        val key = prefs.bridgeGatewayPhone.get().normalizePhone() + "|" + alias.toLowerCase()
         // FNV-1a 64-bit; mask to 48 bits then negate so positive Android ids never collide.
         var h = -0x340d631b7bdddcdbL
         for (c in key) {
-            h = h xor c.code.toLong()
+            h = h xor c.toLong()
             h *= 0x100000001b3L
         }
         val masked = h and 0x0000_FFFF_FFFF_FFFFL
@@ -87,7 +87,7 @@ class BridgeRepositoryImpl @Inject constructor(
         val frame = Wire.Frame(
             seq = seq,
             kind = Wire.Kind.MSG,
-            body = Wire.encodeMsgLines(listOf(Wire.MsgLine(alias = alias, text = text))),
+            body = Wire.encodeMsgLines(listOf(Wire.MsgLine(alias = alias, text = text)))
         )
         return Wire.encode(frame)
     }
@@ -161,7 +161,7 @@ class BridgeRepositoryImpl @Inject constructor(
                 var convo = r.where(Conversation::class.java).equalTo("id", threadId).findFirst()
                 if (convo == null) {
                     convo = r.createObject(Conversation::class.java, threadId)
-                    convo.recipients = RealmList(recipient)
+                    convo!!.recipients = RealmList(recipient!!)
                 }
                 // Insert Message
                 val msg = r.createObject(Message::class.java, messageIds.newId())
@@ -175,7 +175,7 @@ class BridgeRepositoryImpl @Inject constructor(
                 msg.type = "sms"
                 msg.read = false
                 msg.seen = false
-                convo.lastMessage = msg
+                convo!!.lastMessage = msg
             }
         }
         Timber.i("bridge inbound: thread=$threadId alias=$alias seq=$frameSeq")

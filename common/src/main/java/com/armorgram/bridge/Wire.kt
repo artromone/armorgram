@@ -25,13 +25,13 @@ object Wire {
         val idx: Int = 0,
         val total: Int = 0,
         val kind: Kind,
-        val body: String,
+        val body: String
     )
 
     data class MsgLine(
         val alias: String,
         val sender: String = "",
-        val text: String,
+        val text: String
     )
 
     private val headerRe = Regex("""^#(\d+)(?:\.(\d+)/(\d+))?\s+(\S+)\s*(.*)$""", RegexOption.DOT_MATCHES_ALL)
