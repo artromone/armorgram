@@ -230,6 +230,14 @@
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <com.armorgram.common.widget.PreferenceView
+            android:id="@+id/bridge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:icon="@drawable/ic_sync_black_24dp"
+            app:summary="Telegram via SMS bridge"
+            app:title="SMS bridge" />
+
+        <com.armorgram.common.widget.PreferenceView
             android:id="@+id/about"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

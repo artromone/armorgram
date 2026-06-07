@@ -11,22 +11,25 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.armorgram.bridge.BridgeRepository
+import com.armorgram.injection.appComponent
+import javax.inject.Inject
 
 /**
- * Minimal standalone settings activity to configure SMS-bridge mode without
- * having to wire into the existing MVI settings screen.
+ * Standalone settings + actions for SMS-bridge mode.
  *
- * Launchable via:
+ * Reachable from the main Settings screen ("SMS bridge" row) or via:
  *     adb shell am start -n com.armorgram/.feature.bridge.BridgeSettingsActivity
- *
- * Writes to the same default SharedPreferences that [com.armorgram.util.Preferences]
- * reads from, so changes take effect immediately for new SMS.
  */
 class BridgeSettingsActivity : AppCompatActivity() {
 
+    @Inject lateinit var bridge: BridgeRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        appComponent.inject(this)
         super.onCreate(savedInstanceState)
         title = "SMS bridge"
+
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
         val root = LinearLayout(this).apply {
@@ -37,14 +40,13 @@ class BridgeSettingsActivity : AppCompatActivity() {
 
         val help = TextView(this).apply {
             text = "Gateway phone is the number of your Phone1 (sms-gate.app server). " +
-                "When enabled, SMS from that number are parsed as wire frames and shown " +
-                "as separate chats per alias."
+                "When enabled, SMS from that number is parsed as wire frames and shown " +
+                "as separate chats per alias. Non-frame SMS from that number still arrive " +
+                "into the regular conversation thread."
             setPadding(0, 0, 0, 32)
         }
 
-        val gatewayLabel = TextView(this).apply {
-            text = "Gateway phone (E.164, e.g. +79991234567)"
-        }
+        val gatewayLabel = TextView(this).apply { text = "Gateway phone (E.164)" }
         val gatewayField = EditText(this).apply {
             setText(prefs.getString("bridgeGatewayPhone", ""))
             hint = "+7..."
@@ -70,7 +72,6 @@ class BridgeSettingsActivity : AppCompatActivity() {
                     .putBoolean("bridgeEnabled", switch.isChecked)
                     .apply()
                 Toast.makeText(this@BridgeSettingsActivity, "Saved", Toast.LENGTH_SHORT).show()
-                finish()
             }
         }
 
@@ -82,7 +83,50 @@ class BridgeSettingsActivity : AppCompatActivity() {
             }
         }
 
-        listOf(help, gatewayLabel, gatewayField, switch, seqRow, saveBtn, resetBtn).forEach(root::addView)
+        val divider = TextView(this).apply {
+            text = "─── Send command ───"
+            setPadding(0, 48, 0, 16)
+            gravity = Gravity.CENTER
+        }
+
+        val cmdHelp = TextView(this).apply {
+            text = "Send a control command to backend. Examples:\n" +
+                "  /wl add abc      — whitelist alias\n" +
+                "  /approve abc     — approve pending contact\n" +
+                "  /block abc       — block contact\n" +
+                "  /hist abc 20     — request last 20 messages\n" +
+                "  /resend 100-110  — request resend of frames\n" +
+                "  /ping            — heartbeat"
+            setPadding(0, 0, 0, 16)
+        }
+
+        val cmdField = EditText(this).apply {
+            hint = "/ping"
+            setSingleLine(true)
+        }
+
+        val sendCmdBtn = Button(this).apply {
+            text = "Send command"
+            setOnClickListener {
+                val text = cmdField.text.toString().trim()
+                if (text.isEmpty()) {
+                    Toast.makeText(this@BridgeSettingsActivity, "type a command first", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val ok = bridge.sendCommand(-1, text)
+                Toast.makeText(
+                    this@BridgeSettingsActivity,
+                    if (ok) "sent" else "failed (set gateway phone first)",
+                    Toast.LENGTH_SHORT
+                ).show()
+                if (ok) cmdField.setText("")
+            }
+        }
+
+        listOf(
+            help, gatewayLabel, gatewayField, switch, seqRow, saveBtn, resetBtn,
+            divider, cmdHelp, cmdField, sendCmdBtn
+        ).forEach(root::addView)
         setContentView(root)
     }
 

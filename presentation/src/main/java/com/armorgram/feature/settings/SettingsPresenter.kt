@@ -19,7 +19,9 @@
 package com.armorgram.feature.settings
 
 import android.content.Context
+import android.content.Intent
 import com.armorgram.R
+import com.armorgram.feature.bridge.BridgeSettingsActivity
 import com.armorgram.common.Navigator
 import com.armorgram.common.base.QkPresenter
 import com.armorgram.common.util.Colors
@@ -200,6 +202,11 @@ class SettingsPresenter @Inject constructor(
                         R.id.mmsSize -> view.showMmsSizePicker()
 
                         R.id.sync -> syncMessages.execute(Unit)
+
+                        R.id.bridge -> context.startActivity(
+                            Intent(context, BridgeSettingsActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
 
                         R.id.about -> view.showAbout()
                     }

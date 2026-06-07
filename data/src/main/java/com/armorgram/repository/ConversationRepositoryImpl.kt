@@ -35,7 +35,6 @@ import com.armorgram.model.Message
 import com.armorgram.model.Recipient
 import com.armorgram.model.SearchResult
 import com.armorgram.util.PhoneNumberUtils
-import com.armorgram.util.Preferences
 import com.armorgram.util.tryOrNull
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -52,17 +51,11 @@ class ConversationRepositoryImpl @Inject constructor(
     private val conversationFilter: ConversationFilter,
     private val cursorToConversation: CursorToConversation,
     private val cursorToRecipient: CursorToRecipient,
-    private val phoneNumberUtils: PhoneNumberUtils,
-    private val prefs: Preferences
+    private val phoneNumberUtils: PhoneNumberUtils
 ) : ConversationRepository {
 
-    /** Recipient.address of the gateway thread we want to keep out of the chat list. */
-    private fun gatewayAddress(): String =
-        if (prefs.bridgeEnabled.get()) prefs.bridgeGatewayPhone.get() else ""
-
     override fun getConversations(archived: Boolean): RealmResults<Conversation> {
-        val gw = gatewayAddress()
-        val q = Realm.getDefaultInstance()
+        return Realm.getDefaultInstance()
                 .where(Conversation::class.java)
                 .notEqualTo("id", 0L)
                 .equalTo("archived", archived)
@@ -73,8 +66,7 @@ class ConversationRepositoryImpl @Inject constructor(
                 .or()
                 .isNotEmpty("draft")
                 .endGroup()
-        if (gw.isNotEmpty()) q.notEqualTo("recipients.address", gw)
-        return q.sort(
+                .sort(
                         arrayOf("pinned", "draft", "lastMessage.date"),
                         arrayOf(Sort.DESCENDING, Sort.DESCENDING, Sort.DESCENDING)
                 )
@@ -82,10 +74,9 @@ class ConversationRepositoryImpl @Inject constructor(
     }
 
     override fun getConversationsSnapshot(): List<Conversation> {
-        val gw = gatewayAddress()
         return Realm.getDefaultInstance().use { realm ->
             realm.refresh()
-            val q = realm.where(Conversation::class.java)
+            realm.copyFromRealm(realm.where(Conversation::class.java)
                     .notEqualTo("id", 0L)
                     .equalTo("archived", false)
                     .equalTo("blocked", false)
@@ -95,8 +86,7 @@ class ConversationRepositoryImpl @Inject constructor(
                     .or()
                     .isNotEmpty("draft")
                     .endGroup()
-            if (gw.isNotEmpty()) q.notEqualTo("recipients.address", gw)
-            realm.copyFromRealm(q.sort(
+                    .sort(
                             arrayOf("pinned", "draft", "lastMessage.date"),
                             arrayOf(Sort.DESCENDING, Sort.DESCENDING, Sort.DESCENDING)
                     )

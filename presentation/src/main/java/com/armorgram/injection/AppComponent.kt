@@ -70,6 +70,8 @@ interface AppComponent {
     fun inject(controller: SettingsController)
     fun inject(controller: SwipeActionsController)
 
+    fun inject(activity: com.armorgram.feature.bridge.BridgeSettingsActivity)
+
     fun inject(dialog: QkDialog)
 
     fun inject(service: WidgetAdapter)
