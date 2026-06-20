@@ -72,7 +72,8 @@
 
         <LinearLayout
             android:id="@+id/backup"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"
@@ -99,7 +100,8 @@
 
         <LinearLayout
             android:id="@+id/scheduled"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"
@@ -126,7 +128,8 @@
 
         <LinearLayout
             android:id="@+id/blocking"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"
@@ -163,7 +166,8 @@
 
         <LinearLayout
             android:id="@+id/plus"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"
@@ -178,7 +182,8 @@
 
         <LinearLayout
             android:id="@+id/help"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"
@@ -193,7 +198,8 @@
 
         <LinearLayout
             android:id="@+id/invite"
-            style="@style/DrawerRow">
+            style="@style/DrawerRow"
+            android:visibility="gone">
 
             <ImageView
                 style="@style/DrawerIcon"

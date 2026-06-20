@@ -94,37 +94,40 @@ class BridgeRepositoryImpl @Inject constructor(
 
     // ─── inbound ────────────────────────────────────────────────────────────
 
-    override fun routeIncoming(subId: Int, body: String, sentTime: Long): Boolean {
+    override fun routeIncoming(subId: Int, body: String, sentTime: Long): List<Long>? {
         // Non-frame SMS from the gateway falls through to the normal QKSMS receive
         // path so it lands in the real gateway thread and is visible like any
         // regular SMS. We only consume frames we recognize.
-        val frame = Wire.decode(body) ?: return false
+        val frame = Wire.decode(body) ?: return null
         if (!noteSeqFresh(frame.seq)) {
             Timber.d("bridge: drop dup seq=${frame.seq}")
-            return true
+            return emptyList()
         }
         // Chunked? Buffer until complete.
         if (frame.total > 1) {
-            val ready = bufferChunk(subId, sentTime, frame) ?: return true
-            dispatchFrame(ready.subId, ready.frame, ready.sentTime)
-            return true
+            val ready = bufferChunk(subId, sentTime, frame) ?: return emptyList()
+            return dispatchFrame(ready.subId, ready.frame, ready.sentTime)
         }
-        dispatchFrame(subId, frame, sentTime)
-        return true
+        return dispatchFrame(subId, frame, sentTime)
     }
 
-    private fun dispatchFrame(subId: Int, frame: Wire.Frame, sentTime: Long) {
+    /** Inserts the frame's messages and returns the virtual threadIds that got a
+     *  new incoming message and should raise a notification. */
+    private fun dispatchFrame(subId: Int, frame: Wire.Frame, sentTime: Long): List<Long> {
         when (frame.kind) {
             Wire.Kind.MSG -> {
                 val lines = Wire.decodeMsgLines(frame.body)
                 if (lines.isEmpty()) {
                     insertVirtualIncoming(subId, sysAlias, "[malformed-msg] ${frame.body}", sentTime, frame.seq)
-                    return
+                    return emptyList()
                 }
+                val threads = ArrayList<Long>(lines.size)
                 lines.forEach { line ->
                     val display = if (line.sender.isNotEmpty()) "${line.sender}: ${line.text}" else line.text
                     insertVirtualIncoming(subId, line.alias, display, sentTime, frame.seq)
+                    threads.add(virtualThreadId(line.alias))
                 }
+                return threads
             }
             Wire.Kind.NEW -> {
                 val parsed = NewFrame.parse(frame.body)
@@ -135,14 +138,16 @@ class BridgeRepositoryImpl @Inject constructor(
                         "[new chat] ${parsed.preview}", sentTime, frame.seq)
                     insertVirtualIncoming(subId, sysAlias,
                         "?NEW ${parsed.alias} $name ${parsed.preview}", sentTime, frame.seq)
-                } else {
-                    insertVirtualIncoming(subId, sysAlias, "?NEW ${frame.body}", sentTime, frame.seq)
+                    return listOf(virtualThreadId(parsed.alias))
                 }
+                insertVirtualIncoming(subId, sysAlias, "?NEW ${frame.body}", sentTime, frame.seq)
+                return emptyList()
             }
             Wire.Kind.SYS -> insertVirtualIncoming(subId, sysAlias, "sys ${frame.body}", sentTime, frame.seq)
             Wire.Kind.ACK -> insertVirtualIncoming(subId, sysAlias, "ack ${frame.body}", sentTime, frame.seq)
             else -> Timber.w("ignoring inbound frame kind=${frame.kind}")
         }
+        return emptyList()
     }
 
     private fun noteSeqFresh(seq: Long): Boolean = synchronized(seenLock) {

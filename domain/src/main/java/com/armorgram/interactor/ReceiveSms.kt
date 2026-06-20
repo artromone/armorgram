@@ -66,11 +66,20 @@ class ReceiveSms @Inject constructor(
                             .reduce { body, new -> body + new }
 
                     // Bridge mode: if the sender is the configured gateway and the body
-                    // parses as a wire frame, route to virtual conversations and skip the
-                    // normal SMS-CP insert. A failed decode falls through to the usual flow
-                    // so a genuine human SMS from the same number is still readable.
-                    if (bridgeRepo.isGateway(address) && bridgeRepo.routeIncoming(it.subId, body, time)) {
-                        return@mapNotNull null
+                    // parses as a wire frame, route it to virtual conversations, raise a
+                    // notification for each affected chat, and skip the normal SMS-CP
+                    // insert. A non-frame SMS (routeIncoming == null) falls through to the
+                    // usual flow so a genuine human SMS from the same number stays readable.
+                    if (bridgeRepo.isGateway(address)) {
+                        val notifyThreads = bridgeRepo.routeIncoming(it.subId, body, time)
+                        if (notifyThreads != null) {
+                            notifyThreads.forEach { threadId -> notificationManager.update(threadId) }
+                            if (notifyThreads.isNotEmpty()) {
+                                shortcutManager.updateShortcuts()
+                                updateBadge.buildObservable(Unit).subscribe({ _ -> }, { e -> Timber.e(e) })
+                            }
+                            return@mapNotNull null
+                        }
                     }
 
                     // Add the message to the db

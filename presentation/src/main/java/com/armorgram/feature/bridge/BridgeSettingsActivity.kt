@@ -84,48 +84,55 @@ class BridgeSettingsActivity : AppCompatActivity() {
         }
 
         val divider = TextView(this).apply {
-            text = "─── Send command ───"
+            text = "─── Recovery ───"
             setPadding(0, 48, 0, 16)
             gravity = Gravity.CENTER
         }
 
         val cmdHelp = TextView(this).apply {
-            text = "Send a control command to backend. Examples:\n" +
-                "  /wl add abc      — whitelist alias\n" +
-                "  /approve abc     — approve pending contact\n" +
-                "  /block abc       — block contact\n" +
-                "  /hist abc 20     — request last 20 messages\n" +
-                "  /resend 100-110  — request resend of frames\n" +
-                "  /ping            — heartbeat"
+            text = "If some messages didn't arrive, ask the server to resend a range " +
+                "of frames by their sequence numbers (shown as #N in messages)."
             setPadding(0, 0, 0, 16)
         }
 
-        val cmdField = EditText(this).apply {
-            hint = "/ping"
+        val resendField = EditText(this).apply {
+            hint = "100-110"
             setSingleLine(true)
         }
 
-        val sendCmdBtn = Button(this).apply {
-            text = "Send command"
+        val resendBtn = Button(this).apply {
+            text = "Request resend"
             setOnClickListener {
-                val text = cmdField.text.toString().trim()
-                if (text.isEmpty()) {
-                    Toast.makeText(this@BridgeSettingsActivity, "type a command first", Toast.LENGTH_SHORT).show()
+                val range = resendField.text.toString().trim()
+                if (range.isEmpty()) {
+                    Toast.makeText(this@BridgeSettingsActivity, "type a range first, e.g. 100-110", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                val ok = bridge.sendCommand(-1, text)
+                val ok = bridge.sendCommand(-1, "/resend $range")
                 Toast.makeText(
                     this@BridgeSettingsActivity,
                     if (ok) "sent" else "failed (set gateway phone first)",
                     Toast.LENGTH_SHORT
                 ).show()
-                if (ok) cmdField.setText("")
+                if (ok) resendField.setText("")
+            }
+        }
+
+        val pingBtn = Button(this).apply {
+            text = "Ping server"
+            setOnClickListener {
+                val ok = bridge.sendCommand(-1, "/ping")
+                Toast.makeText(
+                    this@BridgeSettingsActivity,
+                    if (ok) "ping sent" else "failed (set gateway phone first)",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
 
         listOf(
             help, gatewayLabel, gatewayField, switch, seqRow, saveBtn, resetBtn,
-            divider, cmdHelp, cmdField, sendCmdBtn
+            divider, cmdHelp, resendField, resendBtn, pingBtn
         ).forEach(root::addView)
         setContentView(root)
     }

@@ -130,6 +130,7 @@
             android:id="@+id/delayed"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             app:icon="@drawable/ic_av_timer_black_24dp"
             app:title="@string/settings_delayed_title"
             tools:summary="No delay" />
@@ -189,6 +190,7 @@
             android:id="@+id/longAsMms"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             app:icon="@drawable/ic_message_black_24dp"
             app:summary="@string/settings_long_as_mms_summary"
             app:title="@string/settings_long_as_mms_title"
@@ -198,7 +200,7 @@
             android:id="@+id/mmsSize"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="visible"
+            android:visibility="gone"
             app:icon="@drawable/ic_photo_size_select_actual_black_24dp"
             app:title="@string/settings_mms_size_title"
             tools:summary="100KB" />
